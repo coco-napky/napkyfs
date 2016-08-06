@@ -1,6 +1,6 @@
 "use strict";
 
-const { setBit, resetBit, checkBit } = require('./bitwise');
+const { setBit, resetBit, checkBit, _32BITS } = require('./bitwise');
 
 class Bitmap{
     constructor(blocks){
@@ -25,7 +25,7 @@ class Bitmap{
             return;
 
         let value   = this.bits[index];
-        this.bits[index] = turnOn ? setBit(value, offset) : resetBit(value, offset);
+        this.bits[index] = turnOn ? setBit(value, offset) >>> 0 : resetBit(value, offset) >>> 0;
     }
 
     setBlock(blockIndex){
@@ -58,7 +58,7 @@ class Bitmap{
     getNext(){
         let blockIndex = 0;
         for (let i = 0; i < this.size; ++i){
-            let index = this.bits[i];
+            let index = this.bits[i] >>> 0;
 
             for (let j = 0; j < 32; ++j)
                 if(checkBit(index, j))

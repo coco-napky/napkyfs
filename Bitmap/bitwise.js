@@ -1,7 +1,10 @@
 "use strict";
 
-const setBit   = (src, n) =>  src |  (1 << n);
-const resetBit = (src, n) =>  src & ~(1 << n);
-const checkBit = (src, n) => (src &  (1 << n)) > 0;
+//unsigned int with 32 bits on
+const _32BITS = 4294967295;
 
-module.exports = { setBit, resetBit, checkBit }
+const setBit   = (src, n) =>    src |  (1 << n >>> 0) >>> 0;
+const resetBit = (src, n) =>    src & ~(1 << n >>> 0) >>> 0;
+const checkBit = (src, n) => !((src &  (1 << n >>> 0) >>> 0) == 0);
+
+module.exports = { setBit, resetBit, checkBit, _32BITS }
