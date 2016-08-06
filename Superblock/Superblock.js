@@ -8,14 +8,20 @@ class Superblock {
 		this.bitmap    = new Bitmap(blocks);
 	}
 
-	getFreeSpace(){
+	getFreeSpace() {
 		return this.bitmap.getFreeBlocks() * this.blockSize;
 	}
 
-	getAndSetNext(){
+	getAndSetNext() {
 		let next = this.bitmap.getNext();
 		this.bitmap.setBlock(next);
 		return next;
+	}
+
+	init(superblock) {
+		this.blockSize = superblock.blockSize;
+		this.bitmap    = new Bitmap(0);
+		this.bitmap.init(superblock.bitmap);
 	}
 }
 

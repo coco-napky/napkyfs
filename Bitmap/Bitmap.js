@@ -11,6 +11,12 @@ class Bitmap {
             this.bits[i] = 0;
     }
 
+    init(bitmap) {
+        this.size   = bitmap.size;
+        this.bits   = bitmap.bits;
+        this.blocks = bitmap.blocks;
+    }
+
     getAbsolutePosition(blockIndex){
         let index  = Math.floor(blockIndex/32),
             offset = blockIndex % 32,
