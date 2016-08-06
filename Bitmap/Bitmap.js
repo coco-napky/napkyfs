@@ -1,12 +1,12 @@
 "use strict";
 
-const { setBit, resetBit, checkBit, _32BITS } = require('./bitwise');
+const { setBit, resetBit, checkBit } = require('./bitwise');
 
 class Bitmap {
     constructor(blocks){
         this.size = Math.floor((blocks - 1)/32) + 1;
         this.bits = [];
-
+        this.blocks = blocks;
         for (let i = 0; i < this.size; ++i)
             this.bits[i] = 0;
     }
@@ -19,7 +19,7 @@ class Bitmap {
     }
 
     toggleBlock(blockIndex, turnOn){
-        let {index, offset, valid} = this.getAbsolutePosition(blockIndex);
+        let { index, offset, valid } = this.getAbsolutePosition(blockIndex);
 
         if(!valid)
             return;
@@ -37,7 +37,7 @@ class Bitmap {
     }
 
     checkBlock(blockIndex){
-        let {index, offset, valid} = this.getAbsolutePosition(blockIndex),
+        let { index, offset, valid } = this.getAbsolutePosition(blockIndex),
             value = this.bits[index];
 
         return valid && checkBit( value, offset);
@@ -45,12 +45,18 @@ class Bitmap {
 
     getFreeBlocks(){
         let freeBlocks = 0;
+        let blockIndex = 0;
         for (let i = 0; i < this.size; ++i){
             let index = this.bits[i];
 
-            for (let j = 0; j < 32; ++j)
+            for (let j = 0; j < 32; ++j){
+                ++blockIndex;
                 if(!checkBit(index, j))
                     ++freeBlocks;
+                if(blockIndex >= this.blocks)
+                    return freeBlocks;
+            }
+
         }
         return freeBlocks;
     }
@@ -60,15 +66,18 @@ class Bitmap {
         for (let i = 0; i < this.size; ++i){
             let index = this.bits[i] >>> 0;
 
-            for (let j = 0; j < 32; ++j)
+            for (let j = 0; j < 32; ++j){
                 if(checkBit(index, j))
                     ++blockIndex;
                 else
                     return blockIndex;
+
+                if(blockIndex >= this.blocks)
+                    return freeBlocks;
+            }
         }
         return -1;
     }
 }
 
 module.exports = Bitmap;
-
