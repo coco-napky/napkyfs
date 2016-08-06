@@ -1,13 +1,9 @@
 "use strict";
 
-const Bitmap  = require('./Bitmap/Bitmap');
+const Superblock  = require('./Superblock/Superblock');
 
-let bitmap = new Bitmap(65);
+let superblock = new Superblock(4096, 65);
 
-for (let i = 0; i < 65; ++i){
-	bitmap.setBlock(i);
-}
+console.log(superblock.getFreeSpace()/4096);
+console.log(superblock.getFreeSpace()/4096);
 
-console.log(bitmap);
-console.log(bitmap.bits[0].toString(2));
-console.log('Free : ' + bitmap.getNext());

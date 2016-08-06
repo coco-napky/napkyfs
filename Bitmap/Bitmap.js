@@ -2,7 +2,7 @@
 
 const { setBit, resetBit, checkBit, _32BITS } = require('./bitwise');
 
-class Bitmap{
+class Bitmap {
     constructor(blocks){
         this.size = Math.floor((blocks - 1)/32) + 1;
         this.bits = [];
