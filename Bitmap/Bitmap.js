@@ -84,6 +84,12 @@ class Bitmap {
         }
         return -1;
     }
+
+    getAndSetNext() {
+        let next = this.getNext();
+        this.setBlock(next);
+        return next;
+    }
 }
 
 module.exports = Bitmap;
