@@ -21,10 +21,9 @@ class FilySystem {
 			fs.open('./FileSystem/units/' + name, 'w+', (err, fd) => {
 
 				if(err)
-					reject({status:1, message: 'Error opening file'});
+					reject({status:0, message: 'Error opening file'});
 
 				let buffer = new Buffer(blockSize);
-
 				for (let i = 0; i < blockSize; ++i)
 					buffer[i] = 0;
 
@@ -32,14 +31,21 @@ class FilySystem {
 					binaryParser.write(fd, buffer, blockSize*i);
 
 				let bitmap = new Bitmap(blocks);
-				bitmap = binaryParser.toBinaryBuffer(bitmap);
-				let bitmapSize = bitmap.length;
+				let bitmapSize = binaryParser.getSize(bitmap);
+
+				let osBlocks = 1 + Math.ceil(bitmapSize/blockSize);
+				console.log('Bitmap Size :' + bitmapSize);
+				for (let i = 0; i < osBlocks; i++)
+					bitmap.getAndSetNext();
+
+
+				let bitmapBuffer = binaryParser.toBinaryBuffer(bitmap);
 
 				let superblock = new Superblock({blockSize, blocks, bitmapSize});
 				superblock = binaryParser.toBinaryBuffer(superblock);
 
 				binaryParser.write(fd, superblock, blockSize*0);
-				binaryParser.write(fd, bitmap, blockSize*1);
+				binaryParser.write(fd, bitmapBuffer, blockSize*1);
 				resolve({status:1});
 			});
 		});

@@ -13,6 +13,8 @@ const toBinaryBuffer = object => {
 	return buffer;
 }
 
+const getSize = object => toBinaryBuffer(object).length;
+
 const parseBinary = buffer => {
 	let length = buffer.readUInt32BE(0, 4);
 	return JSON.parse(buffer.slice(4, length + 4).toString());
@@ -32,4 +34,4 @@ const parseFromFile = (fd, position) => {
 	return parseBinary(object);
 }
 
-module.exports = { parseBinary, toBinaryBuffer, write, read, parseFromFile };
+module.exports = { parseBinary, toBinaryBuffer, write, read, parseFromFile, getSize };
