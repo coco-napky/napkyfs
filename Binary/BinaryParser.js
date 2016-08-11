@@ -18,8 +18,18 @@ const parseBinary = buffer => {
 	return JSON.parse(buffer.slice(4, length + 4).toString());
 }
 
-const write = (fd, buffer, position) => fs.writeSync(fd, buffer, 0, buffer.length, position);
 
+const write = (fd, buffer, position) => fs.writeSync(fd, buffer, 0, buffer.length, position);
 const read = (fd, buffer, position) => fs.readSync(fd, buffer, 0, buffer.length, position);
 
-module.exports = { parseBinary, toBinaryBuffer, write, read };
+const parseFromFile = (fd, position) => {
+	let length = new Buffer(4);
+	read(fd, length, position);
+	length = length.readUInt32BE(0, 4);
+
+	let object = new Buffer(length + 4);
+	read(fd, object, position);
+	return parseBinary(object);
+}
+
+module.exports = { parseBinary, toBinaryBuffer, write, read, parseFromFile };
