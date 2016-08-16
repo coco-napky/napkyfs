@@ -10,7 +10,9 @@ fs.createUnit('napky3', 4096, 100).then( response =>{
    		let {bitmap, superblock, entryTable} = currentUnit.props;
    		entryTable.addFile('test', 5);
    		entryTable.addFile('test2', 5);
+   		entryTable.addFile('test2', 5);
    		entryTable.setName('test', 'newtest');
+   		// entryTable.addFile('test2', 5);
    		console.log(entryTable.getEntries());
  	});
 });

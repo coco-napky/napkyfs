@@ -23,7 +23,8 @@ class EntryTable {
 	}
 
 	setName(src, dst) {
-		console.log('checkpoint : SetName');
+		if(this.exists(dst)) return false;
+
 		for (var i = 0; i < this.props.entries.length; ++i) {
 			let entry = this.props.entries[i];
 			if(src === entry.file.trim()){
@@ -31,17 +32,18 @@ class EntryTable {
 					this.props.entries[i] = new Entry(dst, entry.data);
 				else
 					this.props.entries[i].setName(dst);
-				return;
+				return true;
 			}
 		}
 	}
 
 	addFile(file, data) {
+		if(this.exists(file)) return false;
 		for (var i = 0; i < this.props.entries.length; ++i) {
 			let entry = this.props.entries[i];
 			if(entry.data === -1){
 				this.props.entries[i] = new Entry(file, data);
-				return;
+				return true;
 			}
 		}
 	}
@@ -51,6 +53,15 @@ class EntryTable {
 		.map( entry => {
 			return {file: entry.file.trim(), data: entry.data};
 		});
+	}
+
+	exists(file) {
+		for (var i = 0; i < this.props.entries.length; ++i) {
+			let entry = this.props.entries[i];
+			if(file === entry.file.trim())
+				return true;
+		}
+		return false;
 	}
 }
 
