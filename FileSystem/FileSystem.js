@@ -1,5 +1,6 @@
 "use strict";
 
+const EntryTable = require('../EntryTable/EntryTable');
 const Superblock   = require('../Superblock/Superblock');
 const Bitmap       = require('../Bitmap/Bitmap');
 const Unit         = require('./Unit');
