@@ -1,7 +1,7 @@
 "use strict";
 
 class Superblock {
-	//blockSize, blocks, bitmapSize, directorySize
+	//blockSize, blocks, bitmapSize, entryTableSize, osblocks
 	constructor(props){
 		this.props = props;
 	}

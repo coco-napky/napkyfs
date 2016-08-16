@@ -4,7 +4,7 @@ const Entry = require('./Entry');
 
 class EntryTable {
 
-	 //datablock, files
+	 //entries
 	constructor(size){
 		this.props = {};
 
@@ -19,6 +19,7 @@ class EntryTable {
 	}
 
 	init(entryTable) {
+		//TODO: init each entry
 		this.props = entryTable
 	}
 }
