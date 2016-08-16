@@ -48,6 +48,18 @@ class EntryTable {
 		}
 	}
 
+	deleteFile(file) {
+		for (var i = 0; i < this.props.entries.length; ++i) {
+			let entry = this.props.entries[i];
+			if(entry.file.trim() === file){
+				this.props.entries[i] = new Entry(' ', -1);
+				return true;
+			}
+		}
+		return false;
+	}
+
+
 	getEntries() {
 		return this.props.entries.filter( entry => entry.data !== -1)
 		.map( entry => {
