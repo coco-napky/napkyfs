@@ -16,6 +16,7 @@ class Unit {
 
 		this.props.entryTable = new EntryTable(0);
 		this.props.entryTable.init(args.entryTable.props);
+		this.props.name = args.name;
 	}
 
 	init(props) {

@@ -79,7 +79,7 @@ class Bitmap {
                     return blockIndex;
 
                 if(blockIndex >= this.blocks)
-                    return freeBlocks;
+                    return -1;
             }
         }
         return -1;

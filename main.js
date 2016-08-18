@@ -3,16 +3,10 @@
 const FileSystem = require('./FileSystem/FileSystem');
 let fs = new FileSystem();
 
-fs.createUnit('napky3', 4096, 100).then( response =>{
+fs.createUnit('napky3', 512, 20).then( response =>
 	fs.mountUnit('napky3').then( response => {
+	let {currentUnit} = fs.props;
+	let {bitmap, superblock, entryTable} = currentUnit.props;
 
-   		let {currentUnit} = fs.props;
-   		let {bitmap, superblock, entryTable} = currentUnit.props;
-   		entryTable.addFile('test', 5);
-   		entryTable.addFile('test2', 5);
-   		entryTable.addFile('test2', 5);
-   		entryTable.setName('test', 'newtest');
-        entryTable.deleteFile('test2');
-   		console.log(entryTable.getEntries());
- 	});
-});
+	fs.importFile('./test.txt');
+}));
