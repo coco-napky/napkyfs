@@ -67,6 +67,11 @@ class EntryTable {
 		});
 	}
 
+	getEntry(file) {
+		let entries = this.getEntries().filter(entry => entry.file === file);
+		return entries[0];
+	}
+
 	exists(file) {
 		for (var i = 0; i < this.props.entries.length; ++i) {
 			let entry = this.props.entries[i];

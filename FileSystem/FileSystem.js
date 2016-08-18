@@ -106,9 +106,6 @@ class FileSystem {
 			return;
 		}
 
-		console.log('Import file:', file);
-		console.log('Current Unit : ', currentUnit.props.name);
-
 		fs.open('./FileSystem/units/' + currentUnit.props.name, 'r+', (err, fd) => {
 
 			if(err){
@@ -121,13 +118,16 @@ class FileSystem {
 
 			let split = file.split('/');
 			let fileName = split.length > 1 ? split[split.length - 1] : split[0];
-			entryTable.addFile(fileName, bitmap.getNext());
+
+			if(!entryTable.addFile(fileName, bitmap.getNext())){
+				console.log('File name already exists');
+				return;
+			}
 
 			let buffer = fs.readFileSync(file);
 			let bytesAllocated = 0;
 
 			console.log(entryTable.getEntries());
-			console.log('blockSize :', blockSize);
 
 			while(bytesAllocated < buffer.length){
 				let offset;
@@ -147,15 +147,10 @@ class FileSystem {
 				if(nextBlock != -1)
 					nextBlockBuffer.writeUInt32BE(nextBlock, 0);
 
-				console.log('Current Block:', currentBlock);
-				console.log('Next Block', nextBlockBuffer.readUInt32BE(0,4));
-				// console.log('READ : ',);
-
 				if(currentBlock == -1){
 					console.log('Disk is full');
 					return;
 				}
-
 
 				fs.writeSync(fd, subBuffer, 0, subBuffer.length, blockSize*currentBlock+4);
 				fs.writeSync(fd, nextBlockBuffer, 0, nextBlockBuffer.length, blockSize*currentBlock);
@@ -164,7 +159,91 @@ class FileSystem {
 			}
 			this.writeUnit(fd,this.props.currentUnit);
 		});
+	}
 
+	exportFile(file, dst) {
+
+		let { currentUnit } = this.props;
+
+		if(!currentUnit) {
+			console.log('No unit mounted');
+			return;
+		}
+
+		let { bitmap, superblock, entryTable } = currentUnit.props;
+		let { blockSize } = superblock.props;
+
+		let split = file.split('/');
+		let fileName = split.length > 1 ? split[split.length - 1] : split[0];
+
+		if(!entryTable.exists(fileName)){
+			console.log('File doesn\'t exists');
+			return;
+		}
+
+		let buffer = fs.readFileSync('./FileSystem/units/' + currentUnit.props.name);
+		let bytesAllocated = 0;
+
+		let entry = entryTable.getEntry(fileName);
+
+		fs.open(dst, 'w', (err, fd) => {
+			if(err) {
+				console.log('Error Accessing file');
+				return;
+			}
+
+			let currentBlock = entry.data;
+			let bytesAllocated = 0;
+			while(currentBlock != 0){
+
+				let dataByteOffset = currentBlock*blockSize+4;
+				let subBuffer = buffer.slice(dataByteOffset, dataByteOffset + blockSize - 4);
+				currentBlock = buffer.readUInt32BE(blockSize*currentBlock,4);
+
+				if(currentBlock === 0){
+					let trimIndex = 0;
+					while(subBuffer[trimIndex] != 0)
+						++trimIndex;
+					subBuffer = subBuffer.slice(0, trimIndex);
+					console.log('Trim Index : ', trimIndex);
+				}
+
+				fs.writeSync(fd, subBuffer, 0, subBuffer.length, bytesAllocated);
+				console.log(subBuffer.length);
+				console.log('Next Block', currentBlock);
+				bytesAllocated += blockSize - 4;
+
+			}
+		});
+		// while(bytesAllocated < buffer.length){
+		// 	let offset;
+		// 	let dataSize = blockSize-4;
+		// 	let currentBlock = bitmap.getAndSetNext();
+		// 	let nextBlock = 0;
+		// 	if(bytesAllocated + dataSize >= buffer.length )
+		// 		offset = buffer.length - bytesAllocated;
+		// 	else{
+		// 		offset = blockSize-4;
+		// 		nextBlock = bitmap.getNext();
+		// 	}
+
+		// 	let subBuffer = buffer.slice(bytesAllocated, bytesAllocated + offset);
+		// 	var nextBlockBuffer = new Buffer(4);
+
+		// 	if(nextBlock != -1)
+		// 		nextBlockBuffer.writeUInt32BE(nextBlock, 0);
+
+		// 	if(currentBlock == -1){
+		// 		console.log('Disk is full');
+		// 		return;
+		// 	}
+
+		// 	fs.writeSync(fd, subBuffer, 0, subBuffer.length, blockSize*currentBlock+4);
+		// 	fs.writeSync(fd, nextBlockBuffer, 0, nextBlockBuffer.length, blockSize*currentBlock);
+		// 	bytesAllocated += offset;
+		// 	// console.log(subBuffer.toString()+'|');
+		// }
+		//this.writeUnit(fd,this.props.currentUnit);
 	}
 }
 
