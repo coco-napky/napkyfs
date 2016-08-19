@@ -3,10 +3,11 @@
 class Entry {
 
 	//datablock, files
-	constructor(file, data){
+	constructor(file, data, length){
 
 		file = file.trim();
 		this.data = data;
+		this.length = length;
 
 		if(file.length > 60)
 			file = file.substring(0,60);

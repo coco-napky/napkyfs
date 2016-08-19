@@ -11,7 +11,7 @@ class EntryTable {
 		let entries = [];
 
 		for (var i = 0; i < size; ++i) {
-			let entry = new Entry(' ', -1);
+			let entry = new Entry(' ', -1, -1);
 			entries.push(entry);
 		}
 
@@ -29,7 +29,7 @@ class EntryTable {
 			let entry = this.props.entries[i];
 			if(src === entry.file.trim()){
 				if(!entry instanceof Entry)
-					this.props.entries[i] = new Entry(dst, entry.data);
+					this.props.entries[i] = new Entry(dst, entry.data, entry.length);
 				else
 					this.props.entries[i].setName(dst);
 				return true;
@@ -37,12 +37,13 @@ class EntryTable {
 		}
 	}
 
-	addFile(file, data) {
+	addFile(file, data, length) {
 		if(this.exists(file)) return false;
 		for (var i = 0; i < this.props.entries.length; ++i) {
 			let entry = this.props.entries[i];
 			if(entry.data === -1){
-				this.props.entries[i] = new Entry(file, data);
+				this.props.entries[i] = new Entry(file, data, length);
+				console.log('file added');
 				return true;
 			}
 		}
@@ -52,7 +53,7 @@ class EntryTable {
 		for (var i = 0; i < this.props.entries.length; ++i) {
 			let entry = this.props.entries[i];
 			if(entry.file.trim() === file){
-				this.props.entries[i] = new Entry(' ', -1);
+				this.props.entries[i] = new Entry(' ', -1, -1);
 				return true;
 			}
 		}
@@ -63,7 +64,7 @@ class EntryTable {
 	getEntries() {
 		return this.props.entries.filter( entry => entry.data !== -1)
 		.map( entry => {
-			return {file: entry.file.trim(), data: entry.data};
+			return {file: entry.file.trim(), data: entry.data, length: entry.length};
 		});
 	}
 

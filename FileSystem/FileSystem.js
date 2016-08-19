@@ -32,9 +32,14 @@ class FileSystem {
 					binaryParser.write(fd, buffer, blockSize*i);
 
 				let bitmap = new Bitmap(blocks);
-				let bitmapSize = binaryParser.getSize(bitmap);
+				let bitmapSize = (bitmap.size + 1)*4;
 
-				let osBlocks = 1 + Math.ceil(bitmapSize/blockSize);
+				console.log('Bitmap Size : ', bitmapSize);
+				console.log('========');
+
+				let bitmapBlocks = Math.ceil(bitmapSize/blockSize);
+				let osBlocks = 1 + bitmapBlocks;
+
 				for (let i = 0; i < osBlocks; i++)
 					bitmap.getAndSetNext();
 
@@ -43,12 +48,11 @@ class FileSystem {
 				let entryTable = new EntryTable(tableEntries);
 				let entryTableSize = binaryParser.getSize(entryTable);
 				let entryTableBlocks = Math.ceil(entryTableSize/blockSize);
-
+				console.log('Entry Table Blocks:', entryTableBlocks);
 				for (let i = 0; i < entryTableBlocks; i++)
 					bitmap.getAndSetNext();
 
-				let bitmapBlocks = osBlocks - 1;
-				    osBlocks += entryTableBlocks;
+				osBlocks += entryTableBlocks;
 
 				let superblock = new Superblock({blockSize, blocks, entryTableBlocks, bitmapBlocks, osBlocks});
 				let unit = new Unit({name, bitmap, superblock, entryTable});
@@ -64,7 +68,7 @@ class FileSystem {
 		let {name, bitmap, superblock, entryTable} = unit.props;
 		let {blockSize, bitmapBlocks} = superblock.props;
 
-		let bitmapBuffer     = binaryParser.toBinaryBuffer(bitmap),
+		let bitmapBuffer     = binaryParser.bitmapBuffer(bitmap),
 		    superblockBuffer = binaryParser.toBinaryBuffer(superblock),
 		    entryTableBuffer = binaryParser.toBinaryBuffer(entryTable);
 
@@ -72,7 +76,7 @@ class FileSystem {
 		binaryParser.write(fd, bitmapBuffer, blockSize*1);
 		binaryParser.write(fd, entryTableBuffer, blockSize*(bitmapBlocks+1));
 
-		console.log('Entry Table Written to block : ' + bitmapBlocks+1);
+		console.log('Entry Table Written to block : ' + (bitmapBlocks+1));
 		console.log('Unit ', name, 'has been written');
 	}
 
@@ -83,10 +87,10 @@ class FileSystem {
 					reject({status:0, message: 'Error Mounting Unit'});
 					return;
 				}
-
+				console.log('Mount unit checkpoint ');
 				let superblock = binaryParser.parseFromFile(fd, 0);
 				let { blockSize, bitmapBlocks } = superblock.props;
-				let bitmap     = binaryParser.parseFromFile(fd, blockSize),
+				let bitmap     = binaryParser.parseBitmapFromFile(fd, blockSize),
 				    entryTable = binaryParser.parseFromFile(fd, blockSize*(bitmapBlocks+1)),
 				    unit   = new Unit({name, bitmap, superblock, entryTable});
 				this.props.currentUnit = unit;
@@ -119,12 +123,13 @@ class FileSystem {
 			let split = file.split('/');
 			let fileName = split.length > 1 ? split[split.length - 1] : split[0];
 
-			if(!entryTable.addFile(fileName, bitmap.getNext())){
+			let buffer = fs.readFileSync(file);
+
+			if(!entryTable.addFile(fileName, bitmap.getNext(), buffer.length)){
 				console.log('File name already exists');
 				return;
 			}
 
-			let buffer = fs.readFileSync(file);
 			let bytesAllocated = 0;
 
 			console.log(entryTable.getEntries());
@@ -155,6 +160,7 @@ class FileSystem {
 				fs.writeSync(fd, subBuffer, 0, subBuffer.length, blockSize*currentBlock+4);
 				fs.writeSync(fd, nextBlockBuffer, 0, nextBlockBuffer.length, blockSize*currentBlock);
 				bytesAllocated += offset;
+				console.log('Bytes Imported : ', bytesAllocated);
 				// console.log(subBuffer.toString()+'|');
 			}
 			this.writeUnit(fd,this.props.currentUnit);
@@ -182,6 +188,7 @@ class FileSystem {
 		}
 
 		let buffer = fs.readFileSync('./FileSystem/units/' + currentUnit.props.name);
+		console.log('checkpoint');
 		let bytesAllocated = 0;
 
 		let entry = entryTable.getEntry(fileName);
@@ -200,50 +207,25 @@ class FileSystem {
 				let subBuffer = buffer.slice(dataByteOffset, dataByteOffset + blockSize - 4);
 				currentBlock = buffer.readUInt32BE(blockSize*currentBlock,4);
 
+				let trimIndex = 0;
 				if(currentBlock === 0){
-					let trimIndex = 0;
-					while(subBuffer[trimIndex] != 0)
-						++trimIndex;
+					console.log(entry);
+					trimIndex = entry.length - bytesAllocated;
 					subBuffer = subBuffer.slice(0, trimIndex);
+
 					console.log('Trim Index : ', trimIndex);
 				}
 
 				fs.writeSync(fd, subBuffer, 0, subBuffer.length, bytesAllocated);
-				console.log(subBuffer.length);
 				console.log('Next Block', currentBlock);
-				bytesAllocated += blockSize - 4;
+				if(currentBlock != 0)
+					bytesAllocated += blockSize - 4;
+				else
+					bytesAllocated += trimIndex;
 
+				console.log('Bytes Allocated :', bytesAllocated);
 			}
 		});
-		// while(bytesAllocated < buffer.length){
-		// 	let offset;
-		// 	let dataSize = blockSize-4;
-		// 	let currentBlock = bitmap.getAndSetNext();
-		// 	let nextBlock = 0;
-		// 	if(bytesAllocated + dataSize >= buffer.length )
-		// 		offset = buffer.length - bytesAllocated;
-		// 	else{
-		// 		offset = blockSize-4;
-		// 		nextBlock = bitmap.getNext();
-		// 	}
-
-		// 	let subBuffer = buffer.slice(bytesAllocated, bytesAllocated + offset);
-		// 	var nextBlockBuffer = new Buffer(4);
-
-		// 	if(nextBlock != -1)
-		// 		nextBlockBuffer.writeUInt32BE(nextBlock, 0);
-
-		// 	if(currentBlock == -1){
-		// 		console.log('Disk is full');
-		// 		return;
-		// 	}
-
-		// 	fs.writeSync(fd, subBuffer, 0, subBuffer.length, blockSize*currentBlock+4);
-		// 	fs.writeSync(fd, nextBlockBuffer, 0, nextBlockBuffer.length, blockSize*currentBlock);
-		// 	bytesAllocated += offset;
-		// 	// console.log(subBuffer.toString()+'|');
-		// }
-		//this.writeUnit(fd,this.props.currentUnit);
 	}
 }
 

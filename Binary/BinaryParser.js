@@ -13,6 +13,59 @@ const toBinaryBuffer = object => {
 	return buffer;
 }
 
+const bitmapBuffer = bitmap => {
+	let { blocks, size } = bitmap;
+	let buffer = new Buffer( (size * 4) + 4);
+
+	buffer.writeUInt32BE(blocks, 0);
+
+	console.log('Bitmap size : ', size);
+	console.log('Bits:', bitmap.bits);
+	for (let i = 0; i < size; ++i)
+		buffer.writeUInt32BE(bitmap.bits[i], 4 + i*4);
+
+	for (let i = 0; i < size + 1; ++i){
+		let offset = i*4;
+		console.log('Block:', buffer.readUInt32BE(offset, offset+4));
+	}
+	return buffer;
+}
+
+const parseBitmap = buffer => {
+	console.log('============================');
+	let blocks = buffer.readUInt32BE(0, 4);
+	let size = Math.floor((blocks - 1)/32) + 1;
+	let bits = [];
+
+	for (let i = 1; i < size + 1; ++i){
+		let offset = i*4;
+		let data = buffer.readUInt32BE(offset, offset+4);
+		bits.push(data);
+	}
+	console.log('bits:',bits);
+	console.log('Blocks:', blocks);
+	console.log('Size:', size);
+	console.log('============================');
+	return {size, bits, blocks};
+}
+
+const parseBitmapFromFile = (fd, position) => {
+	let blocksBuffer = new Buffer(4);
+	read(fd, blocksBuffer, position);
+	let blocks = blocksBuffer.readUInt32BE(0, 4);
+	let size = Math.floor((blocks - 1)/32) + 1;
+	let length = 4 + size*4;
+
+	console.log('==== Parse bitmap from file ====');
+	console.log('blocks:', blocks);
+	console.log('blocks:', size);
+	console.log('length:', length);
+
+	let buffer = new Buffer(length);
+	read(fd,buffer,position);
+	return parseBitmap(buffer);
+}
+
 const getSize = object => toBinaryBuffer(object).length;
 
 const parseBinary = buffer => {
@@ -34,4 +87,14 @@ const parseFromFile = (fd, position) => {
 	return parseBinary(object);
 }
 
-module.exports = { parseBinary, toBinaryBuffer, write, read, parseFromFile, getSize };
+module.exports = {
+	parseBinary,
+	toBinaryBuffer,
+	write,
+	read,
+	parseFromFile,
+	getSize,
+	bitmapBuffer,
+	parseBitmap,
+	parseBitmapFromFile
+};
