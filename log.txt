@@ -1,0 +1,4 @@
+- Current unit :  napky3
+[ { file: 'napky.jpg', data: 4615, length: 12288 } ]
+Napky blocks :  25
+Free blocks :  95360

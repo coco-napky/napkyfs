@@ -23,8 +23,13 @@ fs.mountUnit('napky3').then( response => {
 	let {bitmap, superblock, entryTable} = currentUnit.props;
 
 	console.log('- Current unit : ', currentUnit.props.name);
+	console.log(entryTable.getEntries());
+	console.log('Napky blocks : ', fs.getBlocks('napky.jpg').length);
+	console.log('Free blocks : ', bitmap.getFreeBlocks());
 
-	console.log(fs.getBlocks('napky.jpg'));
 	// fs.importFile('./hello.mp3');
-	fs.exportFile('napky.jpg','./satan.jpg' );
+	// fs.exportFile('napky.jpg','./satan.jpg' );
+	// console.log('checkpoint');
+	// fs.deleteFile('napky.jpg');
+	//console.log(entryTable.getEntries());
 });
