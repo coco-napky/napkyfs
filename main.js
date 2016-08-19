@@ -26,5 +26,5 @@ fs.mountUnit('napky3').then( response => {
 
 	console.log(fs.getBlocks('napky.jpg'));
 	// fs.importFile('./hello.mp3');
-	// fs.exportFile('hello.mp3','./hello2.mp3' );
+	fs.exportFile('napky.jpg','./satan.jpg' );
 });

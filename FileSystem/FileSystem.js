@@ -31,28 +31,27 @@ class FileSystem {
 				for (let i = 0; i < blocks; ++i)
 					binaryParser.write(fd, buffer, blockSize*i);
 
-				let bitmap = new Bitmap(blocks);
+				let bitmap     = new Bitmap(blocks);
 				let bitmapSize = (bitmap.size + 1)*4;
 
 				let bitmapBlocks = Math.ceil(bitmapSize/blockSize);
-				let osBlocks = 1 + bitmapBlocks;
+				let osBlocks     = 1 + bitmapBlocks;
 
 				for (let i = 0; i < osBlocks; i++)
 					bitmap.getAndSetNext();
 
-				let freeSpace  = bitmap.getFreeBlocks() * blockSize;
-				let tableEntries = (freeSpace/4)/512;
-				let entryTable = new EntryTable(tableEntries);
-				let entryTableSize = binaryParser.getSize(entryTable);
+				let freeSpace        = bitmap.getFreeBlocks() * blockSize;
+				let tableEntries     = (freeSpace/4)/512;
+				let entryTable       = new EntryTable(tableEntries);
+				let entryTableSize   = binaryParser.getSize(entryTable);
 				let entryTableBlocks = Math.ceil(entryTableSize/blockSize);
 
 				for (let i = 0; i < entryTableBlocks; i++)
 					bitmap.getAndSetNext();
 
 				osBlocks += entryTableBlocks;
-
 				let superblock = new Superblock({blockSize, blocks, entryTableBlocks, bitmapBlocks, osBlocks});
-				let unit = new Unit({name, bitmap, superblock, entryTable});
+				let unit       = new Unit({name, bitmap, superblock, entryTable});
 
 				this.writeUnit(fd, unit);
 				resolve({status:1});
@@ -97,41 +96,33 @@ class FileSystem {
 	}
 
 	importFile(file) {
+		if(!this.checkUnit())
+			return new Error('Error Mounting Unit');
+
+		if(this.checkFile(file))
+			return new Error('File already exists');
 
 		let { currentUnit } = this.props;
+		let { superblock, entryTable, bitmap } = currentUnit.props;
+		let { blockSize } = superblock.props;
 
-		if(!currentUnit) {
-			console.log('No unit mounted');
-			return;
-		}
+		let fileName = this.trimFileName(file);
+		let buffer   = fs.readFileSync(file);
 
 		fs.open('./FileSystem/units/' + currentUnit.props.name, 'r+', (err, fd) => {
 
-			if(err){
-				//reject({status:0, message: 'Error Mounting Unit'});
-				return;
-			}
+			if(err)
+				return err;
 
-			let { bitmap, superblock, entryTable } = currentUnit.props;
-			let { blockSize } = superblock.props;
-
-			let split = file.split('/');
-			let fileName = split.length > 1 ? split[split.length - 1] : split[0];
-
-			let buffer = fs.readFileSync(file);
-
-			if(!entryTable.addFile(fileName, bitmap.getNext(), buffer.length)){
-				console.log('File name already exists');
-				return;
-			}
-
+			entryTable.addFile(fileName, bitmap.getNext(), buffer.length);
 			let bytesAllocated = 0;
 
 			while(bytesAllocated < buffer.length){
 				let offset;
-				let dataSize = blockSize-4;
+				let dataSize     = blockSize-4;
 				let currentBlock = bitmap.getAndSetNext();
-				let nextBlock = 0;
+				let nextBlock    = 0;
+
 				if(bytesAllocated + dataSize >= buffer.length )
 					offset = buffer.length - bytesAllocated;
 				else{
@@ -145,10 +136,8 @@ class FileSystem {
 				if(nextBlock != -1)
 					nextBlockBuffer.writeUInt32BE(nextBlock, 0);
 
-				if(currentBlock == -1){
-					console.log('Disk is full');
-					return;
-				}
+				if(currentBlock == -1)
+					return new Error('Disk is full');
 
 				fs.writeSync(fd, subBuffer, 0, subBuffer.length, blockSize*currentBlock+4);
 				fs.writeSync(fd, nextBlockBuffer, 0, nextBlockBuffer.length, blockSize*currentBlock);
@@ -159,42 +148,33 @@ class FileSystem {
 	}
 
 	exportFile(file, dst) {
+		if(!this.checkUnit())
+			return new Error('Error Mounting Unit');
+
+		if(!this.checkFile(file))
+			return new Error('File doesn\'t exist');
 
 		let { currentUnit } = this.props;
-
-		if(!currentUnit) {
-			console.log('No unit mounted');
-			return;
-		}
-
-		let { bitmap, superblock, entryTable } = currentUnit.props;
+		let { superblock, entryTable, bitmap } = currentUnit.props;
 		let { blockSize } = superblock.props;
 
-		let split = file.split('/');
-		let fileName = split.length > 1 ? split[split.length - 1] : split[0];
-
-		if(!entryTable.exists(fileName)){
-			console.log('File doesn\'t exists');
-			return;
-		}
-
-		let buffer = fs.readFileSync('./FileSystem/units/' + currentUnit.props.name);
-		let bytesAllocated = 0;
-
-		let entry = entryTable.getEntry(fileName);
+		let fileName = this.trimFileName(file);
+		let buffer   = fs.readFileSync('./FileSystem/units/' + currentUnit.props.name);
+		let entry    = entryTable.getEntry(fileName);
 
 		fs.open(dst, 'w', (err, fd) => {
-			if(err) {
-				console.log('Error Accessing file');
-				return;
-			}
 
-			let currentBlock = entry.data;
+			if(err)
+				return err;
+
+			let currentBlock   = entry.data;
 			let bytesAllocated = 0;
+
 			while(currentBlock != 0){
 
 				let dataByteOffset = currentBlock*blockSize+4;
-				let subBuffer = buffer.slice(dataByteOffset, dataByteOffset + blockSize - 4);
+				let subBuffer      = buffer.slice(dataByteOffset, dataByteOffset + blockSize - 4);
+
 				currentBlock = buffer.readUInt32BE(blockSize*currentBlock,4);
 
 				let trimIndex = 0;
