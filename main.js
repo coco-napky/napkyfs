@@ -21,9 +21,10 @@ const binaryParser = require('./Binary/BinaryParser');
 fs.mountUnit('napky3').then( response => {
 	let {currentUnit} = fs.props;
 	let {bitmap, superblock, entryTable} = currentUnit.props;
+
 	console.log('- Current unit : ', currentUnit.props.name);
 
-
-	// fs.importFile('./Dream Theater - Learning to Live.mp3');
-	fs.exportFile('Dream Theater - Learning to Live.mp3','./hello.mp3' );
+	console.log(fs.getBlocks('napky.jpg'));
+	// fs.importFile('./hello.mp3');
+	// fs.exportFile('hello.mp3','./hello2.mp3' );
 });
