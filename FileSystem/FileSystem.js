@@ -1,6 +1,6 @@
 "use strict";
 
-const EntryTable = require('../EntryTable/EntryTable');
+const EntryTable   = require('../EntryTable/EntryTable');
 const Superblock   = require('../Superblock/Superblock');
 const Bitmap       = require('../Bitmap/Bitmap');
 const Unit         = require('./Unit');
@@ -20,7 +20,6 @@ class FileSystem {
 	createUnit(name, blockSize, blocks){
 		let promise  = new Promise( (resolve, reject) => {
 			fs.open('./FileSystem/units/' + name, 'w+', (err, fd) => {
-
 				if(err)
 					reject({status:0, message: 'Error opening file'});
 
@@ -61,8 +60,8 @@ class FileSystem {
 	}
 
 	writeUnit(fd, unit) {
-		let {name, bitmap, superblock, entryTable} = unit.props;
-		let {blockSize, bitmapBlocks} = superblock.props;
+		let { name, bitmap, superblock, entryTable } = unit.props;
+		let { blockSize, bitmapBlocks } = superblock.props;
 
 		let bitmapBuffer     = binaryParser.bitmapBuffer(bitmap),
 		    superblockBuffer = binaryParser.toBinaryBuffer(superblock),
@@ -71,7 +70,6 @@ class FileSystem {
 		binaryParser.write(fd, superblockBuffer, blockSize*0);
 		binaryParser.write(fd, bitmapBuffer, blockSize*1);
 		binaryParser.write(fd, entryTableBuffer, blockSize*(bitmapBlocks+1));
-
 	}
 
 	mountUnit(name){
@@ -84,22 +82,24 @@ class FileSystem {
 
 				let superblock = binaryParser.parseFromFile(fd, 0);
 				let { blockSize, bitmapBlocks } = superblock.props;
-				let bitmap     = binaryParser.parseBitmapFromFile(fd, blockSize),
-				    entryTable = binaryParser.parseFromFile(fd, blockSize*(bitmapBlocks+1)),
-				    unit   = new Unit({name, bitmap, superblock, entryTable});
-				this.props.currentUnit = unit;
 
+				let bitmap     = binaryParser.parseBitmapFromFile(fd, blockSize);
+				let entryTable = binaryParser.parseFromFile(fd, blockSize*(bitmapBlocks+1));
+				let unit       = new Unit({name, bitmap, superblock, entryTable});
+
+				console.log(unit.props.name);
+				this.props.currentUnit = unit;
 				resolve({status:1});
 			});
 		});
 		return promise;
 	}
 
-	importFile(file) {
+	importFile(file, dst) {
 		if(!this.checkUnit())
 			return new Error('Error Mounting Unit');
 
-		if(this.checkFile(file))
+		if(this.checkFile(dst))
 			return new Error('File already exists');
 
 		let { currentUnit } = this.props;
@@ -114,7 +114,7 @@ class FileSystem {
 			if(err)
 				return err;
 
-			entryTable.addFile(fileName, bitmap.getNext(), buffer.length);
+			entryTable.addFile(dst, bitmap.getNext(), buffer.length);
 			let bytesAllocated = 0;
 
 			while(bytesAllocated < buffer.length){
@@ -230,6 +230,26 @@ class FileSystem {
 	trimFileName(file) {
 		let split = file.split('/');
 		return split.length > 1 ? split[split.length - 1] : split[0];
+	}
+
+	deleteFile(file) {
+		let blocks = this.getBlocks(file);
+
+		if(blocks instanceof Error)
+			return blocks;
+
+		let { currentUnit } = this.props;
+		let { bitmap, entryTable } = currentUnit.props;
+
+		let fileName = this.trimFileName(file);
+
+		if(entryTable.deleteFile(fileName)) {
+			for (let i = 0; i < blocks.length; ++i)
+				bitmap.resetBlock(blocks[i]);
+			fs.open('./FileSystem/units/' + currentUnit.props.name, 'r+',
+				(err, fd) => this.writeUnit(fd,this.props.currentUnit)
+			);
+		}
 	}
 }
 

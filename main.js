@@ -5,26 +5,27 @@ let fs = new FileSystem();
 
 const binaryParser = require('./Binary/BinaryParser');
 
+// fs.createUnit('napky4', 512, 100000).then( response =>
+// 	fs.mountUnit('napky4').then( response => {
+// 	let { currentUnit } = fs.props;
+// 	let { bitmap, superblock, entryTable } = currentUnit.props;
 
-// fs.createUnit('napky3', 512, 100000).then( response =>
-// 	fs.mountUnit('napky3').then( response => {
-// 	let {currentUnit} = fs.props;
-// 	let {bitmap, superblock, entryTable} = currentUnit.props;
-
-// 	console.log('Unit Mounted : ');
-
-// 	// console.log(superblock);
-
-// 	fs.importFile('./napky.jpg');
+// 	// fs.importFile('./napky.jpg');
 // }));
 
-fs.mountUnit('napky3').then( response => {
+
+fs.mountUnit('napky4').then( response => {
 	let {currentUnit} = fs.props;
 	let {bitmap, superblock, entryTable} = currentUnit.props;
 
 	console.log('- Current unit : ', currentUnit.props.name);
+	console.log(entryTable.getEntries());
+	// console.log('Napky blocks : ', fs.getBlocks('song.mp3'));
+	console.log('Free blocks : ', bitmap.getFreeBlocks());
 
-	console.log(fs.getBlocks('napky.jpg'));
-	// fs.importFile('./hello.mp3');
-	fs.exportFile('napky.jpg','./satan.jpg' );
+	// fs.importFile('./Dream Theater - Learning to Live.mp3', 'song.mp3');
+	// fs.exportFile('song.mp3','./pollito.mp3' );
+	// console.log('checkpoint');
+	// fs.deleteFile('song.mp3');
+	// console.log(entryTable.getEntries());
 });
