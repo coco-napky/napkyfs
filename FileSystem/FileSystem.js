@@ -87,10 +87,6 @@ class FileSystem {
 				let entryTable = binaryParser.parseFromFile(fd, blockSize*(bitmapBlocks+1));
 				let unit       = new Unit({name, bitmap, superblock, entryTable});
 
-<<<<<<< HEAD
-				console.log(unit.props.name);
-=======
->>>>>>> a69b4ab4589317101b5313cd317c1e0e3b11edb2
 				this.props.currentUnit = unit;
 				resolve({status:1});
 			});
