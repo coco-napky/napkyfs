@@ -33,6 +33,11 @@ class Unit {
 		let superblock = this.props.superblock;
 		return superblock.props.blockSize;
 	}
+
+	getEntries() {
+		let { entryTable } = this.props;
+		return entryTable.getEntries();
+	}
 }
 
 module.exports = Unit;
