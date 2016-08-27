@@ -86,7 +86,6 @@ class FileSystem {
 				let bitmap     = binaryParser.parseBitmapFromFile(fd, blockSize);
 				let entryTable = binaryParser.parseFromFile(fd, blockSize*(bitmapBlocks+1));
 				let unit       = new Unit({name, bitmap, superblock, entryTable});
-
 				this.props.currentUnit = unit;
 				resolve({status:1});
 			});
@@ -95,100 +94,113 @@ class FileSystem {
 	}
 
 	importFile(file, dst) {
-		if(!this.checkUnit())
-			return new Error('Error Mounting Unit');
+		let promise = new Promise((resolve, reject) => {
+			if(!this.checkUnit())
+				return new Error('Error Mounting Unit');
 
-		if(this.checkFile(dst))
-			return new Error('File already exists');
+			if(this.checkFile(dst))
+				return new Error('File already exists');
 
-		let { currentUnit } = this.props;
-		let { superblock, entryTable, bitmap } = currentUnit.props;
-		let { blockSize } = superblock.props;
+			let { currentUnit } = this.props;
+			let { superblock, entryTable, bitmap } = currentUnit.props;
+			let { blockSize } = superblock.props;
 
-		let fileName = this.trimFileName(file);
-		let buffer   = fs.readFileSync(file);
+			let fileName = this.trimFileName(file);
+			let buffer   = fs.readFileSync(file);
 
-		fs.open('./FileSystem/units/' + currentUnit.props.name, 'r+', (err, fd) => {
-
-			if(err)
-				return err;
-
-			entryTable.addFile(dst, bitmap.getNext(), buffer.length);
-			let bytesAllocated = 0;
-
-			while(bytesAllocated < buffer.length){
-				let offset;
-				let dataSize     = blockSize-4;
-				let currentBlock = bitmap.getAndSetNext();
-				let nextBlock    = 0;
-
-				if(bytesAllocated + dataSize >= buffer.length )
-					offset = buffer.length - bytesAllocated;
-				else{
-					offset = blockSize-4;
-					nextBlock = bitmap.getNext();
+			fs.open('./FileSystem/units/' + currentUnit.props.name, 'r+', (err, fd) => {
+				if(err){
+					reject({status:0, message: 'Error Opening unit'});
+					return;
 				}
 
-				let subBuffer = buffer.slice(bytesAllocated, bytesAllocated + offset);
-				var nextBlockBuffer = new Buffer(4);
+				entryTable.addFile(dst, bitmap.getNext(), buffer.length);
+				let bytesAllocated = 0;
 
-				if(nextBlock != -1)
-					nextBlockBuffer.writeUInt32BE(nextBlock, 0);
+				while(bytesAllocated < buffer.length){
+					let offset;
+					let dataSize     = blockSize-4;
+					let currentBlock = bitmap.getAndSetNext();
+					let nextBlock    = 0;
 
-				if(currentBlock == -1)
-					return new Error('Disk is full');
+					if(bytesAllocated + dataSize >= buffer.length )
+						offset = buffer.length - bytesAllocated;
+					else{
+						offset = blockSize-4;
+						nextBlock = bitmap.getNext();
+					}
 
-				fs.writeSync(fd, subBuffer, 0, subBuffer.length, blockSize*currentBlock+4);
-				fs.writeSync(fd, nextBlockBuffer, 0, nextBlockBuffer.length, blockSize*currentBlock);
-				bytesAllocated += offset;
-			}
-			this.writeUnit(fd,this.props.currentUnit);
+					let subBuffer = buffer.slice(bytesAllocated, bytesAllocated + offset);
+					var nextBlockBuffer = new Buffer(4);
+
+					if(nextBlock != -1)
+						nextBlockBuffer.writeUInt32BE(nextBlock, 0);
+
+					if(currentBlock == -1){
+						reject({status:0, message: 'Disk is full '});
+						return;
+					}
+
+					fs.writeSync(fd, subBuffer, 0, subBuffer.length, blockSize*currentBlock+4);
+					fs.writeSync(fd, nextBlockBuffer, 0, nextBlockBuffer.length, blockSize*currentBlock);
+					bytesAllocated += offset;
+				}
+				this.writeUnit(fd,this.props.currentUnit);
+				resolve({status:1});
+			});
 		});
+		return promise;
 	}
 
 	exportFile(file, dst) {
-		if(!this.checkUnit())
-			return new Error('Error Mounting Unit');
+		let promise = new Promise( (resolve, reject) => {
 
-		if(!this.checkFile(file))
-			return new Error('File doesn\'t exist');
+			if(!this.checkUnit())
+				return new Error('Error Mounting Unit');
 
-		let { currentUnit } = this.props;
-		let { superblock, entryTable, bitmap } = currentUnit.props;
-		let { blockSize } = superblock.props;
+			if(!this.checkFile(file))
+				return new Error('File doesn\'t exist');
 
-		let fileName = this.trimFileName(file);
-		let buffer   = fs.readFileSync('./FileSystem/units/' + currentUnit.props.name);
-		let entry    = entryTable.getEntry(fileName);
+			let { currentUnit } = this.props;
+			let { superblock, entryTable, bitmap } = currentUnit.props;
+			let { blockSize } = superblock.props;
 
-		fs.open(dst, 'w', (err, fd) => {
+			let fileName = this.trimFileName(file);
+			let buffer   = fs.readFileSync('./FileSystem/units/' + currentUnit.props.name);
+			let entry    = entryTable.getEntry(fileName);
 
-			if(err)
-				return err;
-
-			let currentBlock   = entry.data;
-			let bytesAllocated = 0;
-
-			while(currentBlock != 0){
-
-				let dataByteOffset = currentBlock*blockSize+4;
-				let subBuffer      = buffer.slice(dataByteOffset, dataByteOffset + blockSize - 4);
-
-				currentBlock = buffer.readUInt32BE(blockSize*currentBlock,4);
-
-				let trimIndex = 0;
-				if(currentBlock === 0){
-					trimIndex = entry.length - bytesAllocated;
-					subBuffer = subBuffer.slice(0, trimIndex);
+			fs.open(dst, 'w', (err, fd) => {
+				if(err){
+					reject({status:0, message: 'Error Writting on unit'});
+					return;
 				}
 
-				fs.writeSync(fd, subBuffer, 0, subBuffer.length, bytesAllocated);
-				if(currentBlock != 0)
-					bytesAllocated += blockSize - 4;
-				else
-					bytesAllocated += trimIndex;
-			}
+				let currentBlock   = entry.data;
+				let bytesAllocated = 0;
+
+				while(currentBlock != 0){
+
+					let dataByteOffset = currentBlock*blockSize+4;
+					let subBuffer      = buffer.slice(dataByteOffset, dataByteOffset + blockSize - 4);
+
+					currentBlock = buffer.readUInt32BE(blockSize*currentBlock,4);
+
+					let trimIndex = 0;
+					if(currentBlock === 0){
+						trimIndex = entry.length - bytesAllocated;
+						subBuffer = subBuffer.slice(0, trimIndex);
+					}
+
+					fs.writeSync(fd, subBuffer, 0, subBuffer.length, bytesAllocated);
+					if(currentBlock != 0)
+						bytesAllocated += blockSize - 4;
+					else
+						bytesAllocated += trimIndex;
+				}
+				resolve({status:1});
+			});
 		});
+		return promise;
 	}
 
 	checkUnit() {
@@ -232,23 +244,31 @@ class FileSystem {
 	}
 
 	deleteFile(file) {
-		let blocks = this.getBlocks(file);
+		let promise = new Promise( (resolve, reject ) => {
 
-		if(blocks instanceof Error)
-			return blocks;
+			let blocks = this.getBlocks(file);
+			if(blocks instanceof Error)
+				throw blocks;
 
-		let { currentUnit } = this.props;
-		let { bitmap, entryTable } = currentUnit.props;
+			let { currentUnit } = this.props;
+			let { bitmap, entryTable } = currentUnit.props;
 
-		let fileName = this.trimFileName(file);
+			let fileName = this.trimFileName(file);
 
-		if(entryTable.deleteFile(fileName)) {
-			for (let i = 0; i < blocks.length; ++i)
-				bitmap.resetBlock(blocks[i]);
-			fs.open('./FileSystem/units/' + currentUnit.props.name, 'r+',
-				(err, fd) => this.writeUnit(fd,this.props.currentUnit)
-			);
-		}
+			if(entryTable.deleteFile(fileName)) {
+				for (let i = 0; i < blocks.length; ++i)
+					bitmap.resetBlock(blocks[i]);
+				fs.open('./FileSystem/units/' + currentUnit.props.name, 'r+',
+				(err, fd) => {
+					if(err){
+						reject({status:0, message: 'Error opening file'});
+						return;
+					}
+					this.writeUnit(fd,this.props.currentUnit)
+					resolve({status:1});
+				});
+			}
+		});
 	}
 }
 
