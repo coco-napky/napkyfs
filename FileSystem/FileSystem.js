@@ -72,6 +72,10 @@ class FileSystem {
 		binaryParser.write(fd, entryTableBuffer, blockSize*(bitmapBlocks+1));
 	}
 
+	unmountUnit() {
+		this.props.currentUnit = null;
+	}
+
 	mountUnit(name){
 		let promise  = new Promise( (resolve, reject) => {
 			fs.open('./FileSystem/units/' + name, 'r', (err, fd) => {
