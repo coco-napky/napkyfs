@@ -4,7 +4,6 @@ const Entry = require('./Entry');
 
 class EntryTable {
 
-	 //entries
 	constructor(size){
 		this.props = {};
 
@@ -43,7 +42,6 @@ class EntryTable {
 			let entry = this.props.entries[i];
 			if(entry.data === -1){
 				this.props.entries[i] = new Entry(file, data, length);
-				console.log('file added');
 				return true;
 			}
 		}

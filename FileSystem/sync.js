@@ -43,4 +43,4 @@ async function deleteFile(file) {
 	}
 }
 
-export default { init, mount, create, importFile, exportFile, deleteFile }
+export default { init, mount, create, import: importFile, export: exportFile,  delete: deleteFile }

@@ -1,31 +1,17 @@
 "use strict";
 
-const FileSystem = require('./FileSystem/FileSystem');
+import FileSystem from './FileSystem/FileSystem';
+import sync from './FileSystem/sync';
+
 let fs = new FileSystem();
 
-const binaryParser = require('./Binary/BinaryParser');
+sync.init(fs);
 
-// fs.createUnit('napky4', 512, 100000).then( response =>
-// 	fs.mountUnit('napky4').then( response => {
-// 	let { currentUnit } = fs.props;
-// 	let { bitmap, superblock, entryTable } = currentUnit.props;
-
-// 	// fs.importFile('./napky.jpg');
-// }));
+(async function(){
+	await sync['create']('napky8', 4096, 10000);
+	await sync.mount('napky8');
+	console.log(fs.props.currentUnit);
+})()
 
 
-fs.mountUnit('napky4').then( response => {
-	let {currentUnit} = fs.props;
-	let {bitmap, superblock, entryTable} = currentUnit.props;
 
-	console.log('- Current unit : ', currentUnit.props.name);
-	console.log(entryTable.getEntries());
-	// console.log('Napky blocks : ', fs.getBlocks('song.mp3'));
-	console.log('Free blocks : ', bitmap.getFreeBlocks());
-
-	// fs.importFile('./Dream Theater - Learning to Live.mp3', 'song.mp3');
-	// fs.exportFile('song.mp3','./pollito.mp3' );
-	// console.log('checkpoint');
-	// fs.deleteFile('song.mp3');
-	// console.log(entryTable.getEntries());
-});
