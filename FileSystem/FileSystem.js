@@ -270,6 +270,11 @@ class FileSystem {
 			}
 		});
 	}
+
+	getUnits() {
+		return fs.readdirSync('./FileSystem/units/')
+		.filter( unit => unit != '.gitkeep');
+	}
 }
 
 module.exports = FileSystem;
