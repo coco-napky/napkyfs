@@ -1,6 +1,6 @@
 'use strict';
 
-import { UNMOUNT_UNIT, MOUNT_UNIT, CREATE_UNIT, LIST_UNITS, INSPECT } from '../constants';
+import { UNMOUNT_UNIT, MOUNT_UNIT, CREATE_UNIT, LIST_UNITS, INSPECT, DELETE_UNIT } from '../constants';
 
 
 const actions = {
@@ -11,8 +11,9 @@ const actions = {
       MOUNT_UNIT,
       UNMOUNT_UNIT,
       CREATE_UNIT,
+      DELETE_UNIT,
       LIST_UNITS,
-      INSPECT
+      INSPECT,
     ]
 }
 

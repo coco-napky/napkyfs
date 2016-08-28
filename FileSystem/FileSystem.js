@@ -76,6 +76,11 @@ class FileSystem {
 		this.props.currentUnit = null;
 	}
 
+	deleteUnit(unit) {
+		fs.unlinkSync('./FileSystem/units/' + unit);
+	}
+
+
 	mountUnit(name){
 		let promise  = new Promise( (resolve, reject) => {
 			fs.open('./FileSystem/units/' + name, 'r', (err, fd) => {

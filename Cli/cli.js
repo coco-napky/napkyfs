@@ -3,7 +3,7 @@
 import inquirer from 'inquirer';
 import stepOnePrompts  from './prompts/stepOne';
 import createUnitPrompts  from './prompts/createUnit';
-import { UNMOUNT_UNIT, MOUNT_UNIT, CREATE_UNIT, LIST_UNITS, INSPECT } from './constants';
+import { UNMOUNT_UNIT, MOUNT_UNIT, CREATE_UNIT, LIST_UNITS, INSPECT, DELETE_UNIT } from './constants';
 
 import FileSystem from '../FileSystem/FileSystem';
 import sync from '../FileSystem/sync';
@@ -44,6 +44,10 @@ async function stepOne() {
 				await createUnit();
 			break
 
+			case DELETE_UNIT:
+				await deleteUnit();
+			break
+
 			case LIST_UNITS:
 				if(units.length > 0)
 					console.log('\n', ...units, '\n');
@@ -54,6 +58,7 @@ async function stepOne() {
 			case INSPECT:
 				inspect();
 			break
+
 		}
 	}
 }
@@ -108,6 +113,17 @@ function inspect() {
 	else
 		console.log('*** No Unit Mounted ***');
 	console.log('');
+}
+
+async function deleteUnit() {
+	let answer = await inquirer.prompt({
+	    type: 'list',
+	    name: 'unit',
+	    message: 'Choose unit to delete :',
+	    choices: fs.getUnits()
+	});
+	fs.deleteUnit(answer.unit);
+	// await sync.mount(answer.unit);
 }
 
 async function createUnit() {
